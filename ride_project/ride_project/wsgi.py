@@ -8,9 +8,16 @@ https://docs.djangoproject.com/en/4.2/howto/deployment/wsgi/
 """
 
 import os
+import sys
 
+# Add your project directory to the path
+path = '/home/yourusername/ride_management'
+if path not in sys.path:
+    sys.path.append(path)
+
+# Set environment variables
+os.environ['DJANGO_SETTINGS_MODULE'] = 'ride_project.settings'  # Adjust to your settings module
+
+# Serve Django via WSGI
 from django.core.wsgi import get_wsgi_application
-
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ride_project.settings')
-
 application = get_wsgi_application()
