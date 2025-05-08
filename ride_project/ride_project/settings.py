@@ -123,4 +123,7 @@ REST_FRAMEWORK = {
 }
 
 
-
+CORS_ALLOWED_ORIGINS = [
+    "https://abhiramt14.pythonanywhere.com",
+    "http://localhost:3000",
+]
