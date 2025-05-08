@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Edit Vehicle</h1>
+
+<div class="card">
+    <form method="post">
+        {% csrf_token %}
+        
+        {% if form.non_field_errors %}
+            <div class="error-message">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+        
+        <div class="form-group">
+            <label for="{{ form.plate_number.id_for_label }}">Plate Number</label>
+            {{ form.plate_number }}
+            {% if form.plate_number.errors %}
+                <div class="field-error">{{ form.plate_number.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.model.id_for_label }}">Model</label>
+            {{ form.model }}
+            {% if form.model.errors %}
+                <div class="field-error">{{ form.model.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.year.id_for_label }}">Year</label>
+            {{ form.year }}
+            {% if form.year.errors %}
+                <div class="field-error">{{ form.year.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.color.id_for_label }}">Color</label>
+            {{ form.color }}
+            {% if form.color.errors %}
+                <div class="field-error">{{ form.color.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.seats.id_for_label }}">Seats</label>
+            {{ form.seats }}
+            {% if form.seats.errors %}
+                <div class="field-error">{{ form.seats.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.driver.id_for_label }}">Driver (Optional)</label>
+            {{ form.driver }}
+            {% if form.driver.errors %}
+                <div class="field-error">{{ form.driver.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.status.id_for_label }}">Status</label>
+            {{ form.status }}
+            {% if form.status.errors %}
+                <div class="field-error">{{ form.status.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <button type="submit" class="btn btn-success">Update Vehicle</button>
+        <a href="{% url 'vehicles_list' %}" class="btn btn-danger">Cancel</a>
+    </form>
+</div>
+
+<style>
+    .field-error {
+        color: #e74c3c;
+        font-size: 0.9em;
+        margin-top: 5px;
+    }
+    .error-message {
+        background-color: #ffebee;
+        border: 1px solid #ffcdd2;
+        color: #c62828;
+        padding: 10px;
+        margin-bottom: 20px;
+        border-radius: 4px;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <h1>Manage Drivers</h1>
+    <a href="{% url 'add_driver' %}" class="btn btn-success">Add New Driver</a>
+</div>
+
+<div class="card">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>License Number</th>
+                <th>License Expiry</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for driver in drivers %}
+            <tr>
+                <td>{{ driver.id }}</td>
+                <td>{{ driver.user.first_name }} {{ driver.user.last_name }}</td>
+                <td>{{ driver.user.email }}</td>
+                <td>{{ driver.user.phone }}</td>
+                <td>{{ driver.license_number }}</td>
+                <td>{{ driver.license_expiry }}</td>
+                <td>
+                    <span class="status-badge status-{{ driver.status }}">
+                        {{ driver.get_status_display }}
+                    </span>
+                </td>
+                <td>
+                    <a href="{% url 'edit_driver' driver.id %}" class="btn btn-warning">Edit</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" style="text-align: center;">No drivers found</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

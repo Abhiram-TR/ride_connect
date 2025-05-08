@@ -1,0 +1,73 @@
+<!-- templates/admin/trips.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Manage Trips</h1>
+
+<div class="card">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Trip ID</th>
+        <th>User</th>
+        <th>Driver</th>
+        <th>Vehicle</th>
+        <th>Pickup Location</th>
+        <th>Dropoff Location</th>
+        <th>Pickup Time</th>
+        <!-- Removed Fare column -->
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for trip in trips %}
+      <tr>
+        <td>{{ trip.id }}</td>
+        <td>
+          {% if trip.user %}
+            {{ trip.user.first_name }} {{ trip.user.last_name }}
+          {% else %}
+            Guest
+          {% endif %}
+        </td>
+        <td>
+          {% if trip.driver %}
+            {{ trip.driver.user.first_name }} {{ trip.driver.user.last_name }}
+          {% else %}
+            Not assigned
+          {% endif %}
+        </td>
+        <td>
+          {% if trip.driver and trip.driver.vehicle_set.exists %}
+            {% with vehicle=trip.driver.vehicle_set.first %}
+              {{ vehicle.model }} ({{ vehicle.plate_number }})
+            {% endwith %}
+          {% elif trip.vehicle %}
+            {{ trip.vehicle.model }} ({{ trip.vehicle.plate_number }})
+          {% else %}
+            Not assigned
+          {% endif %}
+        </td>
+        <td>{{ trip.pickup_location }}</td>
+        <td>{{ trip.dropoff_location }}</td>
+        <td>{{ trip.pickup_time|date:"M d, Y H:i" }}</td>
+        <!-- Removed Fare column -->
+        <td>
+          <span class="status-badge status-{{ trip.status }}">
+            {{ trip.get_status_display }}
+          </span>
+        </td>
+        <td>
+          <a href="{% url 'trip_detail' trip.id %}" class="btn btn-primary">View Detail</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="9" style="text-align: center;">No trips found</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

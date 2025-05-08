@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Dashboard</h1>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <h3>Total Drivers</h3>
+        <div class="value">{{ total_drivers }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>Active Drivers</h3>
+        <div class="value">{{ active_drivers }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>Total Vehicles</h3>
+        <div class="value">{{ total_vehicles }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>Available Vehicles</h3>
+        <div class="value">{{ available_vehicles }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>Total Trips</h3>
+        <div class="value">{{ total_trips }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>Pending Trips</h3>
+        <div class="value">{{ pending_trips }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>Completed Trips</h3>
+        <div class="value">{{ completed_trips }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>Total Users</h3>
+        <div class="value">{{ total_users }}</div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Quick Actions</h2>
+    <a href="{% url 'add_driver' %}" class="btn btn-primary">Add New Driver</a>
+    <a href="{% url 'add_vehicle' %}" class="btn btn-success">Add New Vehicle</a>
+    <a href="{% url 'trips_list' %}" class="btn btn-warning">View All Trips</a>
+</div>
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <h1>Manage Vehicles</h1>
+    <a href="{% url 'add_vehicle' %}" class="btn btn-success">Add New Vehicle</a>
+</div>
+
+<div class="card">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Plate Number</th>
+                <th>Model</th>
+                <th>Year</th>
+                <th>Color</th>
+                <th>Seats</th>
+                <th>Driver</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for vehicle in vehicles %}
+            <tr>
+                <td>{{ vehicle.id }}</td>
+                <td>{{ vehicle.plate_number }}</td>
+                <td>{{ vehicle.model }}</td>
+                <td>{{ vehicle.year }}</td>
+                <td>{{ vehicle.color }}</td>
+                <td>{{ vehicle.seats }}</td>
+                <td>
+                    {% if vehicle.driver %}
+                        {{ vehicle.driver.user.first_name }} {{ vehicle.driver.user.last_name }}
+                    {% else %}
+                        No driver assigned
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="status-badge status-{{ vehicle.status }}">
+                        {{ vehicle.get_status_display }}
+                    </span>
+                </td>
+                <td>
+                    <a href="{% url 'edit_vehicle' vehicle.id %}" class="btn btn-warning">Edit</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="9" style="text-align: center;">No vehicles found</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
