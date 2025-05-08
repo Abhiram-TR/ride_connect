@@ -1,11 +1,11 @@
-# ride_management/urls.py
+# ride_management/urls.py (simplified version without location management)
 from django.urls import path
 from django.contrib.auth import views as auth_views
 from . import views
 
 urlpatterns = [
-    # Auth URLs - Using your custom login view instead of Django's built-in
-    path('', views.custom_login, name='login'),  # Custom login view as the root URL
+    # Auth URLs
+    path('', auth_views.LoginView.as_view(template_name='admin/login.html'), name='login'),
     path('logout/', views.admin_logout, name='logout'),
     
     # Dashboard
@@ -25,13 +25,15 @@ urlpatterns = [
     path('trips/', views.trips_list, name='trips_list'),
     path('trips/<int:trip_id>/', views.trip_detail, name='trip_detail'),
     
+    
     # Users
     path('users/', views.users_list, name='users_list'),
     path('users/add/', views.add_user, name='add_user'),
     path('users/edit/<int:user_id>/', views.edit_user, name='edit_user'),
     
-    # Locations
+    #Remove location URLs for now
     path('locations/', views.locations_list, name='locations_list'),
     path('locations/add/', views.add_location, name='add_location'),
     path('locations/edit/<int:location_id>/', views.edit_location, name='edit_location'),
 ]
+

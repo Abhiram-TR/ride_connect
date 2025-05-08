@@ -5,30 +5,6 @@ from .models import CustomUser, Driver, Vehicle, Trip
 from .forms import DriverForm, VehicleForm, TripForm, UserForm
 
 
-from django.contrib.auth import authenticate, login
-from django.contrib import messages
-
-def custom_login(request):
-    """Custom login view that shows your admin/login.html template"""
-    # If user is already authenticated, redirect to dashboard
-    if request.user.is_authenticated:
-        return redirect('dashboard')
-    
-    # Handle login form submission
-    if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        
-        user = authenticate(request, username=username, password=password)
-        
-        if user is not None and user.user_type == 'admin':
-            login(request, user)
-            return redirect('dashboard')
-        else:
-            messages.error(request, 'Invalid username or password, or not an admin account')
-    
-    # Display login form
-    return render(request, 'admin/login.html')
 
 @login_required
 def dashboard(request):
