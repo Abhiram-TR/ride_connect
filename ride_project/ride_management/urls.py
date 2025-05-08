@@ -37,5 +37,3 @@ urlpatterns = [
     path('locations/edit/<int:location_id>/', views.edit_location, name='edit_location'),
 ]
 
-if settings.DEBUG:
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
