@@ -11,7 +11,7 @@ import os
 import sys
 
 # Add your project directory to the path
-path = '/home/abhiramt14/ride_connect'
+path = '/home/abhiramt14/ride_connect/ride_project'
 if path not in sys.path:
     sys.path.append(path)
 
