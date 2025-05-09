@@ -166,3 +166,21 @@ class LocationForm(forms.ModelForm):
             'latitude': forms.NumberInput(attrs={'step': '0.000001'}),
             'longitude': forms.NumberInput(attrs={'step': '0.000001'}),
         }
+
+
+
+from .models import Location
+
+class LocationForm(forms.ModelForm):
+    """Form for creating/editing locations"""
+    class Meta:
+        model = Location
+        fields = ['name', 'address', 'latitude', 'longitude', 'is_airport', 'is_active']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Location name'}),
+            'address': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Address'}),
+            'latitude': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Latitude (e.g., 8.4834)', 'step': '0.000001'}),
+            'longitude': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Longitude (e.g., 76.9198)', 'step': '0.000001'}),
+            'is_airport': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }

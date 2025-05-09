@@ -1,10 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
-from .models import CustomUser, Driver, Vehicle, Trip
-from .forms import DriverForm, VehicleForm, TripForm, UserForm
-
-
+from .models import CustomUser, Driver, Vehicle, Trip,Location
+from .forms import DriverForm, VehicleForm, TripForm, UserForm ,LocationForm 
 
 @login_required
 def dashboard(request):
@@ -21,6 +19,9 @@ def dashboard(request):
         'pending_trips': Trip.objects.filter(status='pending').count(),
         'completed_trips': Trip.objects.filter(status='completed').count(),
         'total_users': CustomUser.objects.filter(user_type='user').count(),
+        # Add location statistics
+        'total_locations': Location.objects.count(),
+        'airport_locations': Location.objects.filter(is_airport=True, is_active=True).count(),
     }
     return render(request, 'admin/dashboard.html', context)
 

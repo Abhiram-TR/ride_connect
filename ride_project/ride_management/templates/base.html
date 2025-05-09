@@ -233,6 +233,9 @@
         <a href="{% url 'vehicles_list' %}" {% if 'vehicles' in request.resolver_match.url_name %}class="active"{% endif %}>Manage Vehicles</a>
         <a href="{% url 'trips_list' %}" {% if 'trips' in request.resolver_match.url_name %}class="active"{% endif %}>Manage Trips</a>
         <a href="{% url 'users_list' %}" {% if 'users' in request.resolver_match.url_name %}class="active"{% endif %}>Users List</a>
+        
+        <!-- Add this new link for Locations management -->
+        <a href="{% url 'locations_list' %}" {% if 'locations' in request.resolver_match.url_name %}class="active"{% endif %}>Manage Locations</a>
     </div>
 
     <main class="main-content">
