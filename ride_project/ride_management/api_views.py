@@ -731,30 +731,33 @@ def admin_driver_locations(request):
     
     result = []
     for driver in drivers:
-        # Get driver's location - check if DriverLocation model exists
-        location_data = None
+        # Get driver's location from DriverLocation model
         try:
             driver_location = DriverLocation.objects.filter(driver=driver).first()
+            
             if driver_location:
                 location_data = {
-                    'latitude': driver_location.latitude,
-                    'longitude': driver_location.longitude,
+                    'latitude': float(driver_location.latitude),
+                    'longitude': float(driver_location.longitude),
                     'last_updated': driver_location.last_updated.isoformat()
                 }
-        except:
-            # Try to get from cache as fallback
-            try:
+            else:
+                # If no DriverLocation entry exists, try cache as fallback
                 from django.core.cache import cache
                 cache_key = f'driver_location_{driver.id}'
                 cached_location = cache.get(cache_key)
+                
                 if cached_location:
                     location_data = {
-                        'latitude': cached_location['latitude'],
-                        'longitude': cached_location['longitude'],
+                        'latitude': float(cached_location['latitude']),
+                        'longitude': float(cached_location['longitude']),
                         'last_updated': cached_location['timestamp']
                     }
-            except Exception as e:
-                print(f"Error getting driver location from cache: {str(e)}")
+                else:
+                    location_data = None
+        except Exception as e:
+            print(f"Error getting driver location: {str(e)}")
+            location_data = None
         
         # Get driver's active trip if exists
         active_trip = Trip.objects.filter(

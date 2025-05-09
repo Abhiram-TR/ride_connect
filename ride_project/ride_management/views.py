@@ -290,7 +290,7 @@ def edit_location(request, location_id):
 
 @login_required
 def driver_tracking(request):
-    """Driver tracking page - simplified for testing"""
+    """Driver tracking page"""
     if request.user.user_type != 'admin':
         return redirect('login')
     
@@ -302,12 +302,13 @@ def driver_tracking(request):
         status__in=['active', 'on_trip']
     ).select_related('user')
     
-    # Add some basic location data for testing
+    # Add location data for each driver
     for driver in active_drivers:
         try:
             driver_location = DriverLocation.objects.filter(driver=driver).first()
             driver.location = driver_location
-        except:
+        except Exception as e:
+            print(f"Error fetching driver location: {str(e)}")
             driver.location = None
         
         # Get active trip
@@ -316,9 +317,8 @@ def driver_tracking(request):
             status__in=['accepted', 'in_progress']
         ).first()
     
-    # Simple test key - replace with your actual API key
-    # For testing only: use a placeholder key to see if the template loads
-    google_maps_api_key = 'AIzaSyBzcYTdIi4d1Uj9jMx1zRunJoLN_hHEI_Q'
+    # Get Google Maps API key from settings
+    google_maps_api_key = getattr(settings, 'GOOGLE_MAPS_API_KEY', 'AIzaSyBzcYTdIi4d1Uj9jMx1zRunJoLN_hHEI_Q')
     
     return render(request, 'admin/driver_tracking.html', {
         'drivers': drivers,
