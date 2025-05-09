@@ -8,9 +8,10 @@ from django.utils import timezone
 from rest_framework.authtoken.models import Token
 
 # Import all your models here
-from .models import CustomUser, Driver, Vehicle, Trip, Location
+from .models import CustomUser, Driver, Vehicle, Trip, Location, DriverLocation
 from .serializers import UserSerializer, DriverSerializer, VehicleSerializer, TripSerializer, LocationSerializer
 from .services import allocate_trip_to_nearest_driver
+
 
 
 # ride_management/api_views.py (login function)
@@ -715,3 +716,58 @@ def auto_assign_trip(request, trip_id):
             'success': False,
             'message': str(e)
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def admin_driver_locations(request):
+    """API endpoint for admin to get all driver locations"""
+    if request.user.user_type != 'admin':
+        return Response({'error': 'Not authorized'}, status=status.HTTP_403_FORBIDDEN)
+    
+    # Get active drivers and their info
+    drivers = Driver.objects.filter(
+        status__in=['active', 'on_trip']
+    ).select_related('user')
+    
+    result = []
+    for driver in drivers:
+        # Get driver's location - check if DriverLocation model exists
+        location_data = None
+        try:
+            driver_location = DriverLocation.objects.filter(driver=driver).first()
+            if driver_location:
+                location_data = {
+                    'latitude': driver_location.latitude,
+                    'longitude': driver_location.longitude,
+                    'last_updated': driver_location.last_updated.isoformat()
+                }
+        except:
+            # Try to get from cache as fallback
+            try:
+                from django.core.cache import cache
+                cache_key = f'driver_location_{driver.id}'
+                cached_location = cache.get(cache_key)
+                if cached_location:
+                    location_data = {
+                        'latitude': cached_location['latitude'],
+                        'longitude': cached_location['longitude'],
+                        'last_updated': cached_location['timestamp']
+                    }
+            except Exception as e:
+                print(f"Error getting driver location from cache: {str(e)}")
+        
+        # Get driver's active trip if exists
+        active_trip = Trip.objects.filter(
+            driver=driver,
+            status__in=['accepted', 'in_progress']
+        ).first()
+        
+        result.append({
+            'id': driver.id,
+            'name': f"{driver.user.first_name} {driver.user.last_name}",
+            'status': driver.status,
+            'location': location_data,
+            'active_trip_id': active_trip.id if active_trip else None
+        })
+    
+    return Response({'drivers': result})

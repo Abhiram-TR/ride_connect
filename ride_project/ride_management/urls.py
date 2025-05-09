@@ -2,6 +2,7 @@
 from django.urls import path
 from django.contrib.auth import views as auth_views
 from . import views
+from . import api_views
 
 urlpatterns = [
     # Auth URLs
@@ -35,5 +36,11 @@ urlpatterns = [
     path('locations/', views.locations_list, name='locations_list'),
     path('locations/add/', views.add_location, name='add_location'),
     path('locations/edit/<int:location_id>/', views.edit_location, name='edit_location'),
+
+     # Add the driver tracking URL here
+    path('driver-tracking/', views.driver_tracking, name='driver_tracking'),
+    
+    # Add the API URL here
+    path('api/driver-locations/', api_views.admin_driver_locations, name='admin_driver_locations'),
 ]
 

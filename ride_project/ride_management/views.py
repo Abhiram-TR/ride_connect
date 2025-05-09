@@ -1,9 +1,12 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
-from .models import CustomUser, Driver, Vehicle, Trip,Location
+from .models import CustomUser, Driver, Vehicle, Trip,Location, DriverLocation
 from .forms import DriverForm, VehicleForm, TripForm, UserForm ,LocationForm 
 from django.contrib import messages
+import json
+from django.conf import settings
+
 
 @login_required
 def dashboard(request):
@@ -282,3 +285,70 @@ def edit_location(request, location_id):
         form = LocationForm(instance=location)
     
     return render(request, 'admin/edit_location.html', {'form': form, 'location': location})
+
+
+
+@login_required
+def driver_tracking(request):
+    """Driver tracking page"""
+    if request.user.user_type != 'admin':
+        return redirect('login')
+    
+    # Get all drivers
+    drivers = Driver.objects.all().select_related('user')
+    
+    # Get active drivers
+    active_drivers = Driver.objects.filter(
+        status__in=['active', 'on_trip']
+    ).select_related('user')
+    
+    # Prepare driver data for JavaScript
+    drivers_data = []
+    
+    # For each active driver, attach location and active trip info
+    for driver in active_drivers:
+        # Try to get location
+        location_data = None
+        try:
+            driver_location = DriverLocation.objects.filter(driver=driver).first()
+            if driver_location:
+                driver.location = driver_location
+                location_data = {
+                    'latitude': float(driver_location.latitude),
+                    'longitude': float(driver_location.longitude),
+                    'last_updated': driver_location.last_updated.isoformat()
+                }
+            else:
+                driver.location = None
+        except:
+            driver.location = None
+        
+        # Get active trip
+        active_trip = Trip.objects.filter(
+            driver=driver,
+            status__in=['accepted', 'in_progress']
+        ).first()
+        
+        driver.active_trip = active_trip
+        
+        # Add to JSON data
+        drivers_data.append({
+            'id': driver.id,
+            'name': f"{driver.user.first_name} {driver.user.last_name}",
+            'status': driver.status,
+            'location': location_data,
+            'active_trip_id': active_trip.id if active_trip else None
+        })
+    
+    # Convert to JSON for JavaScript
+    active_drivers_json = json.dumps(drivers_data)
+    
+    # Get Google Maps API key from settings
+    google_maps_api_key = getattr(settings, 'GOOGLE_MAPS_API_KEY', '')
+    
+    return render(request, 'admin/driver_tracking.html', {
+        'drivers': drivers,
+        'active_drivers': active_drivers,
+        'active_drivers_json': active_drivers_json,
+        'google_maps_api_key': google_maps_api_key
+    })
