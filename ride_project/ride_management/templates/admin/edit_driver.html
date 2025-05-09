@@ -1,101 +1,77 @@
+<!-- admin/edit_driver.html -->
 {% extends 'base.html' %}
 
 {% block content %}
 <h1>Edit Driver</h1>
 
 <div class="card">
+    {% if form.errors %}
+    <div class="alert alert-danger">
+        <strong>Error:</strong> Please correct the following errors:
+        <ul>
+            {% for field in form %}
+                {% for error in field.errors %}
+                    <li>{{ field.label }}: {{ error }}</li>
+                {% endfor %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}
+                <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+    
     <form method="post">
         {% csrf_token %}
-        
-        {% if form.non_field_errors %}
-            <div class="error-message">
-                {{ form.non_field_errors }}
-            </div>
-        {% endif %}
+        <div class="form-group">
+            <label for="{{ form.username.id_for_label }}">Username</label>
+            {{ form.username }}
+            {% if form.username.help_text %}<small class="form-text text-muted">{{ form.username.help_text }}</small>{% endif %}
+        </div>
         
         <div class="form-group">
             <label for="{{ form.first_name.id_for_label }}">First Name</label>
             {{ form.first_name }}
-            {% if form.first_name.errors %}
-                <div class="field-error">{{ form.first_name.errors }}</div>
-            {% endif %}
         </div>
         
         <div class="form-group">
             <label for="{{ form.last_name.id_for_label }}">Last Name</label>
             {{ form.last_name }}
-            {% if form.last_name.errors %}
-                <div class="field-error">{{ form.last_name.errors }}</div>
-            {% endif %}
         </div>
         
         <div class="form-group">
             <label for="{{ form.email.id_for_label }}">Email</label>
             {{ form.email }}
-            {% if form.email.errors %}
-                <div class="field-error">{{ form.email.errors }}</div>
-            {% endif %}
         </div>
         
         <div class="form-group">
             <label for="{{ form.phone.id_for_label }}">Phone</label>
             {{ form.phone }}
-            {% if form.phone.errors %}
-                <div class="field-error">{{ form.phone.errors }}</div>
-            {% endif %}
         </div>
         
         <div class="form-group">
             <label for="{{ form.password.id_for_label }}">Password</label>
             {{ form.password }}
-            <small>{{ form.password.help_text }}</small>
-            {% if form.password.errors %}
-                <div class="field-error">{{ form.password.errors }}</div>
-            {% endif %}
+            {% if form.password.help_text %}<small class="form-text text-muted">{{ form.password.help_text }}</small>{% endif %}
         </div>
         
         <div class="form-group">
             <label for="{{ form.license_number.id_for_label }}">License Number</label>
             {{ form.license_number }}
-            {% if form.license_number.errors %}
-                <div class="field-error">{{ form.license_number.errors }}</div>
-            {% endif %}
         </div>
         
         <div class="form-group">
             <label for="{{ form.license_expiry.id_for_label }}">License Expiry</label>
             {{ form.license_expiry }}
-            {% if form.license_expiry.errors %}
-                <div class="field-error">{{ form.license_expiry.errors }}</div>
-            {% endif %}
         </div>
         
         <div class="form-group">
             <label for="{{ form.status.id_for_label }}">Status</label>
             {{ form.status }}
-            {% if form.status.errors %}
-                <div class="field-error">{{ form.status.errors }}</div>
-            {% endif %}
         </div>
         
         <button type="submit" class="btn btn-success">Update Driver</button>
         <a href="{% url 'drivers_list' %}" class="btn btn-danger">Cancel</a>
     </form>
 </div>
-
-<style>
-    .field-error {
-        color: #e74c3c;
-        font-size: 0.9em;
-        margin-top: 5px;
-    }
-    .error-message {
-        background-color: #ffebee;
-        border: 1px solid #ffcdd2;
-        color: #c62828;
-        padding: 10px;
-        margin-bottom: 20px;
-        border-radius: 4px;
-    }
-</style>
 {% endblock %}
