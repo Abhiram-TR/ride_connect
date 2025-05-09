@@ -290,7 +290,7 @@ def edit_location(request, location_id):
 
 @login_required
 def driver_tracking(request):
-    """Driver tracking page"""
+    """Driver tracking page - simplified for testing"""
     if request.user.user_type != 'admin':
         return redirect('login')
     
@@ -302,53 +302,26 @@ def driver_tracking(request):
         status__in=['active', 'on_trip']
     ).select_related('user')
     
-    # Prepare driver data for JavaScript
-    drivers_data = []
-    
-    # For each active driver, attach location and active trip info
+    # Add some basic location data for testing
     for driver in active_drivers:
-        # Try to get location
-        location_data = None
         try:
             driver_location = DriverLocation.objects.filter(driver=driver).first()
-            if driver_location:
-                driver.location = driver_location
-                location_data = {
-                    'latitude': float(driver_location.latitude),
-                    'longitude': float(driver_location.longitude),
-                    'last_updated': driver_location.last_updated.isoformat()
-                }
-            else:
-                driver.location = None
+            driver.location = driver_location
         except:
             driver.location = None
         
         # Get active trip
-        active_trip = Trip.objects.filter(
+        driver.active_trip = Trip.objects.filter(
             driver=driver,
             status__in=['accepted', 'in_progress']
         ).first()
-        
-        driver.active_trip = active_trip
-        
-        # Add to JSON data
-        drivers_data.append({
-            'id': driver.id,
-            'name': f"{driver.user.first_name} {driver.user.last_name}",
-            'status': driver.status,
-            'location': location_data,
-            'active_trip_id': active_trip.id if active_trip else None
-        })
     
-    # Convert to JSON for JavaScript
-    active_drivers_json = json.dumps(drivers_data)
-    
-    # Get Google Maps API key from settings
-    google_maps_api_key = getattr(settings, 'GOOGLE_MAPS_API_KEY', '')
+    # Simple test key - replace with your actual API key
+    # For testing only: use a placeholder key to see if the template loads
+    google_maps_api_key = 'AIzaSyBzcYTdIi4d1Uj9jMx1zRunJoLN_hHEI_Q'
     
     return render(request, 'admin/driver_tracking.html', {
         'drivers': drivers,
         'active_drivers': active_drivers,
-        'active_drivers_json': active_drivers_json,
         'google_maps_api_key': google_maps_api_key
     })

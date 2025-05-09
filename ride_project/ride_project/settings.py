@@ -109,7 +109,7 @@ AUTH_USER_MODEL = 'ride_management.CustomUser'
 # Auth settings
 LOGIN_URL = '/login/'  # Change this from '/' to '/login/'
 LOGIN_REDIRECT_URL = '/dashboard/'
-LOGOUT_REDIRECT_URL = '/login/'  # Changed from '/' to '/login/'
+LOGOUT_REDIRECT_URL = '/admin/'  # Changed from '/' to '/login/'
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 

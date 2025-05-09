@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'admin/base.html' %}
 {% load static %}
 
 {% block content %}
@@ -55,7 +55,7 @@
                             <tr data-driver-id="{{ driver.id }}">
                                 <td>{{ driver.user.first_name }} {{ driver.user.last_name }}</td>
                                 <td>
-                                    <span class="badge badge-{{ driver.status|yesno:'success,secondary' }}">
+                                    <span class="badge badge-{% if driver.status == 'active' %}success{% elif driver.status == 'on_trip' %}primary{% else %}secondary{% endif %}">
                                         {{ driver.get_status_display }}
                                     </span>
                                 </td>
@@ -90,236 +90,52 @@
     </div>
 </div>
 
-{# Store data for JavaScript in data attributes #}
-<div id="map-data" 
-    data-drivers="{{ active_drivers_json }}" 
-    data-api-url="{% url 'admin_driver_locations' %}"
-    data-marker-active="{% static 'admin/images/marker-green.png' %}"
-    data-marker-on-trip="{% static 'admin/images/marker-blue.png' %}"
-    data-marker-inactive="{% static 'admin/images/marker-gray.png' %}">
-</div>
-
-{# Separate JavaScript from Django templates #}
 <script>
+    // Initialize map variables
     let map;
     let markers = {};
-    let infoWindows = {};
     
-    // Get data from Django template
-    const mapData = document.getElementById('map-data');
-    let initialDrivers = [];
-    try {
-        initialDrivers = JSON.parse(mapData.getAttribute('data-drivers'));
-    } catch (e) {
-        console.error('Error parsing driver data:', e);
-        initialDrivers = [];
-    }
-    
-    const apiUrl = mapData.getAttribute('data-api-url');
-    const markerIcons = {
-        'active': mapData.getAttribute('data-marker-active'),
-        'on_trip': mapData.getAttribute('data-marker-on-trip'),
-        'inactive': mapData.getAttribute('data-marker-inactive')
-    };
-    
+    // Initialize map with basic configurations
     function initMap() {
         // Default center (Thiruvananthapuram coordinates)
         const defaultCenter = { lat: 8.4834, lng: 76.9198 };
         
+        // Create map
         map = new google.maps.Map(document.getElementById('map'), {
             zoom: 12,
-            center: defaultCenter
+            center: defaultCenter,
+            mapTypeId: google.maps.MapTypeId.ROADMAP
         });
         
-        // Initialize markers for all active drivers
-        initialDrivers.forEach(function(driver) {
-            if (driver.location) {
-                addDriverMarker(
-                    driver.id,
-                    driver.name,
-                    driver.location.latitude,
-                    driver.location.longitude,
-                    driver.status,
-                    driver.active_trip_id
-                );
-            }
+        // Add static markers for testing
+        addStaticMarkers();
+    }
+    
+    // Add static test markers to verify map is working
+    function addStaticMarkers() {
+        // Just add a test marker at center location
+        const marker = new google.maps.Marker({
+            position: { lat: 8.4834, lng: 76.9198 },
+            map: map,
+            title: "Test Marker"
         });
         
-        // Start periodic updates
-        setInterval(updateDriverLocations, 10000); // Update every 10 seconds
+        // Add click event for the marker
+        marker.addListener('click', function() {
+            alert('Test marker clicked!');
+        });
     }
     
-    function addDriverMarker(driverId, driverName, lat, lng, status, tripId) {
-        const position = { lat: parseFloat(lat), lng: parseFloat(lng) };
-        
-        // Define marker icon based on status
-        let iconUrl = markerIcons[status] || markerIcons['inactive'];
-        
-        // Create or update marker
-        if (markers[driverId]) {
-            markers[driverId].setPosition(position);
-        } else {
-            const marker = new google.maps.Marker({
-                position: position,
-                map: map,
-                title: driverName,
-                icon: iconUrl
-            });
-            
-            markers[driverId] = marker;
-            
-            // Create info window content
-            let contentString = '<div class="info-window">' +
-                                '<h5>' + driverName + '</h5>' +
-                                '<p>Status: ' + status + '</p>';
-            
-            if (tripId) {
-                contentString += '<p>Trip: <a href="/admin/trips/' + tripId + '/" target="_blank">View Trip #' + tripId + '</a></p>';
-            }
-            
-            contentString += '</div>';
-            
-            const infoWindow = new google.maps.InfoWindow({
-                content: contentString
-            });
-            
-            infoWindows[driverId] = infoWindow;
-            
-            marker.addListener('click', function() {
-                // Close all open info windows first
-                Object.values(infoWindows).forEach(function(window) { 
-                    window.close();
-                });
-                
-                // Open this info window
-                infoWindow.open(map, marker);
-            });
-        }
-    }
-    
-    function updateDriverLocations() {
-        fetch(apiUrl)
-            .then(function(response) { 
-                return response.json(); 
-            })
-            .then(function(data) {
-                // Update markers on the map
-                if (data.drivers && Array.isArray(data.drivers)) {
-                    data.drivers.forEach(function(driver) {
-                        if (driver.location) {
-                            addDriverMarker(
-                                driver.id,
-                                driver.name,
-                                driver.location.latitude,
-                                driver.location.longitude,
-                                driver.status,
-                                driver.active_trip_id
-                            );
-                            
-                            // Update the last updated time in the table
-                            const row = document.querySelector('tr[data-driver-id="' + driver.id + '"] .last-updated');
-                            if (row) {
-                                row.textContent = driver.location.last_updated;
-                            }
-                        }
-                    });
-                }
-            })
-            .catch(function(error) {
-                console.error('Error fetching driver locations:', error);
-            });
-    }
-    
-    // Wait for DOM to be ready
+    // Just wire up the locate buttons for simple functionality
     document.addEventListener('DOMContentLoaded', function() {
-        // Filter by driver
-        document.getElementById('driver-select').addEventListener('change', function() {
-            const driverId = this.value;
-            
-            if (driverId) {
-                // Center map on selected driver
-                if (markers[driverId]) {
-                    map.setCenter(markers[driverId].getPosition());
-                    map.setZoom(15);
-                    
-                    // Open info window for selected driver
-                    if (infoWindows[driverId]) {
-                        Object.values(infoWindows).forEach(function(window) {
-                            window.close();
-                        });
-                        infoWindows[driverId].open(map, markers[driverId]);
-                    }
-                }
-                
-                // Filter table
-                document.querySelectorAll('#drivers-table-body tr').forEach(function(row) {
-                    if (row.getAttribute('data-driver-id') === driverId) {
-                        row.style.display = '';
-                    } else {
-                        row.style.display = 'none';
-                    }
-                });
-            } else {
-                // Show all drivers
-                document.querySelectorAll('#drivers-table-body tr').forEach(function(row) {
-                    row.style.display = '';
-                });
-                
-                // Fit map to show all markers
-                const bounds = new google.maps.LatLngBounds();
-                Object.values(markers).forEach(function(marker) {
-                    bounds.extend(marker.getPosition());
-                });
-                
-                if (Object.keys(markers).length > 0) {
-                    map.fitBounds(bounds);
-                }
-            }
-        });
-        
-        // Filter by status
-        document.getElementById('status-select').addEventListener('change', function() {
-            const status = this.value;
-            
-            // Update map markers visibility based on status
-            Object.keys(markers).forEach(function(driverId) {
-                const row = document.querySelector('tr[data-driver-id="' + driverId + '"]');
-                if (row) {
-                    const driverStatus = row.querySelector('td:nth-child(2) span').textContent.trim().toLowerCase();
-                    
-                    if (!status || driverStatus === status) {
-                        markers[driverId].setMap(map);
-                        row.style.display = '';
-                    } else {
-                        markers[driverId].setMap(null);
-                        row.style.display = 'none';
-                    }
-                }
-            });
-        });
-        
-        // Locate driver button
         document.querySelectorAll('.locate-driver').forEach(function(button) {
             button.addEventListener('click', function() {
-                const driverId = this.getAttribute('data-driver-id');
-                
-                if (markers[driverId]) {
-                    map.setCenter(markers[driverId].getPosition());
-                    map.setZoom(15);
-                    
-                    // Open info window
-                    if (infoWindows[driverId]) {
-                        Object.values(infoWindows).forEach(function(window) {
-                            window.close();
-                        });
-                        infoWindows[driverId].open(map, markers[driverId]);
-                    }
-                } else {
-                    alert('Driver location not available.');
-                }
+                alert('This would locate the driver on the map if data was available.');
             });
         });
     });
 </script>
-<script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&callback=initMap" async defer></script>
+
+<!-- Load the Google Maps API script -->
+<script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&callback=initMap"></script>
 {% endblock %}
