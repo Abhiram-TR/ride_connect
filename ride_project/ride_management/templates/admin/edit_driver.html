@@ -74,4 +74,51 @@
         <a href="{% url 'drivers_list' %}" class="btn btn-danger">Cancel</a>
     </form>
 </div>
+
+<!-- Additional custom styles for edit driver form -->
+<style>
+    /* Style improvements for form elements */
+    .form-group input,
+    .form-group select {
+        display: block;
+        width: 100%;
+        padding: 0.5rem;
+        font-size: 1rem;
+        line-height: 1.5;
+        color: #495057;
+        background-color: #fff;
+        background-clip: padding-box;
+        border: 1px solid #ced4da;
+        border-radius: 0.25rem;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+    
+    .form-group input:focus,
+    .form-group select:focus {
+        border-color: #80bdff;
+        outline: 0;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+    
+    .alert-danger {
+        color: #721c24;
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+        padding: 0.75rem 1.25rem;
+        margin-bottom: 1rem;
+        border: 1px solid transparent;
+        border-radius: 0.25rem;
+    }
+    
+    /* Make sure form inputs render correctly */
+    input[type="date"] {
+        height: calc(1.5em + 0.75rem + 2px);
+    }
+    
+    /* Ensure error messages stand out */
+    .text-muted {
+        color: #6c757d;
+        font-size: 0.875em;
+    }
+</style>
 {% endblock %}

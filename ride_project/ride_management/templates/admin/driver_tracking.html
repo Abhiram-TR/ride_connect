@@ -1,4 +1,4 @@
-{% extends 'admin/base.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
 {% block content %}
@@ -90,6 +90,8 @@
     </div>
 </div>
 
+<!-- No need to add styles here anymore as they're in the base template -->
+
 <script>
     // Initialize map variables
     let map;
@@ -133,6 +135,22 @@
                 alert('This would locate the driver on the map if data was available.');
             });
         });
+        
+        // Fix for Google Maps re-rendering when window is resized
+        window.addEventListener('resize', function() {
+            google.maps.event.trigger(map, 'resize');
+        });
+        
+        // Fix for Google Maps in tabs
+        if (map) {
+            setTimeout(function() {
+                google.maps.event.trigger(map, 'resize');
+                // Re-center the map if needed
+                if (map.getCenter()) {
+                    map.setCenter(map.getCenter());
+                }
+            }, 100);
+        }
     });
 </script>
 
