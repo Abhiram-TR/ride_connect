@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
 from .models import CustomUser, Driver, Vehicle, Trip,Location
 from .forms import DriverForm, VehicleForm, TripForm, UserForm ,LocationForm 
+from django.contrib import messages
 
 @login_required
 def dashboard(request):
@@ -180,8 +181,16 @@ def add_user(request):
     if request.method == 'POST':
         form = UserForm(request.POST)
         if form.is_valid():
-            form.save()
-            return redirect('users_list')
+            try:
+                user = form.save()
+                messages.success(request, f"User '{user.username}' created successfully")
+                return redirect('users_list')
+            except Exception as e:
+                messages.error(request, f"Error creating user: {str(e)}")
+                print(f"Error creating user: {str(e)}")
+        else:
+            # Print form errors for debugging
+            print(f"Form errors: {form.errors}")
     else:
         form = UserForm()
     
@@ -197,12 +206,20 @@ def edit_user(request, user_id):
     if request.method == 'POST':
         form = UserForm(request.POST, instance=user)
         if form.is_valid():
-            form.save()
-            return redirect('users_list')
+            try:
+                form.save()
+                messages.success(request, f"User '{user.username}' updated successfully")
+                return redirect('users_list')
+            except Exception as e:
+                messages.error(request, f"Error updating user: {str(e)}")
+                print(f"Error updating user: {str(e)}")
+        else:
+            # Print form errors for debugging
+            print(f"Form errors: {form.errors}")
     else:
         form = UserForm(instance=user)
     
-    return render(request, 'admin/edit_user.html', {'form': form, 'user': user})
+    return render(request, 'admin/edit_user.html', {'form': form, 'user_obj': user})
 
 @login_required
 def update_trip_status(request, trip_id):

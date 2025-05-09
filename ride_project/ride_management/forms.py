@@ -105,67 +105,76 @@ class UserForm(forms.ModelForm):
     first_name = forms.CharField(max_length=30)
     last_name = forms.CharField(max_length=30)
     email = forms.EmailField()
-    phone = forms.CharField(max_length=15)
-    password1 = forms.CharField(widget=forms.PasswordInput(), label='Password', required=False)
-    password2 = forms.CharField(widget=forms.PasswordInput(), label='Confirm Password', required=False)
-    password = forms.CharField(widget=forms.PasswordInput(), label='New Password', required=False)
+    phone = forms.CharField(max_length=15, required=False)  # Make phone optional
+    password = forms.CharField(widget=forms.PasswordInput(), required=False,
+                               help_text="Leave blank to keep current password")
     
     class Meta:
         model = CustomUser
-        fields = []  # We'll handle fields manually
+        fields = ['username', 'first_name', 'last_name', 'email', 'phone']
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.instance.pk:  # Edit form
-            self.fields['username'].initial = self.instance.username
-            self.fields['first_name'].initial = self.instance.first_name
-            self.fields['last_name'].initial = self.instance.last_name
-            self.fields['email'].initial = self.instance.email
-            self.fields['phone'].initial = self.instance.phone
-            # Remove password2 for edit form
-            del self.fields['password2']
-        else:  # Create form
-            # Remove password for create form
-            del self.fields['password']
-            self.fields['password1'].required = True
-            self.fields['password2'].required = True
+        
+        # If this is a new user form, make password required
+        if not self.instance.pk:
+            self.fields['password'].required = True
+            self.fields['password'].help_text = "Enter a secure password"
     
-    def clean(self):
-        cleaned_data = super().clean()
-        password1 = cleaned_data.get('password1')
-        password2 = cleaned_data.get('password2')
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        # If editing an existing user
+        if self.instance.pk:
+            # Only validate if email has changed
+            if email == self.instance.email:
+                return email
+                
+            # Check if another user has this email
+            if CustomUser.objects.exclude(pk=self.instance.pk).filter(email=email).exists():
+                raise forms.ValidationError("This email is already registered")
+        else:
+            # New user - check if email exists
+            if CustomUser.objects.filter(email=email).exists():
+                raise forms.ValidationError("This email is already registered")
         
-        if not self.instance.pk:  # Create form
-            if password1 and password2 and password1 != password2:
-                raise forms.ValidationError("Passwords don't match")
+        return email
+    
+    def clean_username(self):
+        username = self.cleaned_data.get('username')
+        # If editing an existing user
+        if self.instance.pk:
+            # Only validate if username has changed
+            if username == self.instance.username:
+                return username
+                
+            # Check if another user has this username
+            if CustomUser.objects.exclude(pk=self.instance.pk).filter(username=username).exists():
+                raise forms.ValidationError("This username is already taken")
+        else:
+            # New user - check if username exists
+            if CustomUser.objects.filter(username=username).exists():
+                raise forms.ValidationError("This username is already taken")
         
-        return cleaned_data
+        return username
     
     def save(self, commit=True):
         user = self.instance
+        user.username = self.cleaned_data['username']
+        user.first_name = self.cleaned_data['first_name']
+        user.last_name = self.cleaned_data['last_name']
+        user.email = self.cleaned_data['email']
+        user.phone = self.cleaned_data.get('phone', '')
         
-        if not user.pk:  # New user
-            user = CustomUser.objects.create_user(
-                username=self.cleaned_data['username'],
-                email=self.cleaned_data['email'],
-                password=self.cleaned_data['password1'],
-                first_name=self.cleaned_data['first_name'],
-                last_name=self.cleaned_data['last_name'],
-                phone=self.cleaned_data['phone'],
-                user_type='user'
-            )
-        else:  # Existing user
-            user.username = self.cleaned_data['username']
-            user.first_name = self.cleaned_data['first_name']
-            user.last_name = self.cleaned_data['last_name']
-            user.email = self.cleaned_data['email']
-            user.phone = self.cleaned_data['phone']
+        # Handle password
+        if self.cleaned_data.get('password'):
+            user.set_password(self.cleaned_data['password'])
             
-            if self.cleaned_data.get('password'):
-                user.set_password(self.cleaned_data['password'])
-            
-            if commit:
-                user.save()
+        # If it's a new user, set the user type
+        if not user.pk:
+            user.user_type = 'user'
+        
+        if commit:
+            user.save()
         
         return user
 # Add this to your ride_management/forms.py file
