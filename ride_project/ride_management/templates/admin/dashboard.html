@@ -36,6 +36,15 @@
         <h3>Total Users</h3>
         <div class="value">{{ total_users }}</div>
     </div>
+    <!-- Add Location Statistics -->
+    <div class="stat-card">
+        <h3>Total Locations</h3>
+        <div class="value">{{ total_locations }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>Airport Locations</h3>
+        <div class="value">{{ airport_locations }}</div>
+    </div>
 </div>
 
 <div class="card">
@@ -43,5 +52,6 @@
     <a href="{% url 'add_driver' %}" class="btn btn-primary">Add New Driver</a>
     <a href="{% url 'add_vehicle' %}" class="btn btn-success">Add New Vehicle</a>
     <a href="{% url 'trips_list' %}" class="btn btn-warning">View All Trips</a>
+    <a href="{% url 'add_location' %}" class="btn btn-info">Add New Location</a>
 </div>
 {% endblock %}

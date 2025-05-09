@@ -1,10 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
-from .models import CustomUser, Driver, Vehicle, Trip
-from .forms import DriverForm, VehicleForm, TripForm, UserForm
-
-
+from .models import CustomUser, Driver, Vehicle, Trip,Location
+from .forms import DriverForm, VehicleForm, TripForm, UserForm ,LocationForm 
 
 @login_required
 def dashboard(request):
@@ -21,6 +19,9 @@ def dashboard(request):
         'pending_trips': Trip.objects.filter(status='pending').count(),
         'completed_trips': Trip.objects.filter(status='completed').count(),
         'total_users': CustomUser.objects.filter(user_type='user').count(),
+        # Add location statistics
+        'total_locations': Location.objects.count(),
+        'airport_locations': Location.objects.filter(is_airport=True, is_active=True).count(),
     }
     return render(request, 'admin/dashboard.html', context)
 
@@ -59,12 +60,25 @@ def edit_driver(request, driver_id):
     if request.method == 'POST':
         form = DriverForm(request.POST, instance=driver)
         if form.is_valid():
-            form.save()
-            return redirect('drivers_list')
+            try:
+                form.save()
+                return redirect('drivers_list')
+            except Exception as e:
+                # Handle unique constraint violations
+                if 'unique constraint' in str(e).lower() or 'duplicate key' in str(e).lower():
+                    if 'username' in str(e).lower():
+                        form.add_error('username', 'This username is already taken')
+                    elif 'email' in str(e).lower():
+                        form.add_error('email', 'This email is already registered')
+                    else:
+                        form.add_error(None, f"Database error: {str(e)}")
+                else:
+                    form.add_error(None, f"Error saving driver: {str(e)}")
     else:
         form = DriverForm(instance=driver)
     
     return render(request, 'admin/edit_driver.html', {'form': form, 'driver': driver})
+    
 
 @login_required
 def vehicles_list(request):

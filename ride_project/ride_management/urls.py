@@ -5,7 +5,7 @@ from . import views
 
 urlpatterns = [
     # Auth URLs
-    path('', auth_views.LoginView.as_view(template_name='admin/login.html'), name='login'),
+    path('', auth_views.LoginView.as_view(template_name='admin/login1.html'), name='login'),
     path('logout/', views.admin_logout, name='logout'),
     
     # Dashboard

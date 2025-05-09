@@ -6,6 +6,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django import forms
 from .models import CustomUser, Driver, Vehicle, Trip
 
+# forms.py
 class DriverForm(forms.ModelForm):
     """Form for creating/editing drivers"""
     username = forms.CharField(max_length=30)
@@ -13,7 +14,8 @@ class DriverForm(forms.ModelForm):
     last_name = forms.CharField(max_length=30)
     email = forms.EmailField()
     phone = forms.CharField(max_length=15)
-    password = forms.CharField(widget=forms.PasswordInput(), required=False)
+    password = forms.CharField(widget=forms.PasswordInput(), required=False,
+                             help_text="Leave blank to keep the current password")
     
     class Meta:
         model = Driver
@@ -22,38 +24,49 @@ class DriverForm(forms.ModelForm):
             'license_expiry': forms.DateInput(attrs={'type': 'date'}),
         }
     
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:  # Edit form
+            self.fields['username'].initial = self.instance.user.username
+            self.fields['first_name'].initial = self.instance.user.first_name
+            self.fields['last_name'].initial = self.instance.user.last_name
+            self.fields['email'].initial = self.instance.user.email
+            self.fields['phone'].initial = self.instance.user.phone
+    
     def save(self, commit=True):
         driver = super().save(commit=False)
         
-        # Create or update user
-        if driver.pk:  # Update existing
+        if driver.pk:  # Update existing driver
             user = driver.user
             user.username = self.cleaned_data['username']
             user.first_name = self.cleaned_data['first_name']
             user.last_name = self.cleaned_data['last_name']
             user.email = self.cleaned_data['email']
             user.phone = self.cleaned_data['phone']
+            
+            # Update password only if provided
             if self.cleaned_data['password']:
                 user.set_password(self.cleaned_data['password'])
-        else:  # Create new
+                
+            user.save()
+        else:  # Create new driver
             user = CustomUser.objects.create_user(
                 username=self.cleaned_data['username'],
                 email=self.cleaned_data['email'],
+                password=self.cleaned_data['password'] or 'defaultpassword123',
                 first_name=self.cleaned_data['first_name'],
                 last_name=self.cleaned_data['last_name'],
                 phone=self.cleaned_data['phone'],
-                password=self.cleaned_data['password'] or 'defaultpassword123',
                 user_type='driver'
             )
         
-        user.save()
         driver.user = user
         
         if commit:
             driver.save()
         
         return driver
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.instance.pk:
@@ -165,4 +178,22 @@ class LocationForm(forms.ModelForm):
         widgets = {
             'latitude': forms.NumberInput(attrs={'step': '0.000001'}),
             'longitude': forms.NumberInput(attrs={'step': '0.000001'}),
+        }
+
+
+
+from .models import Location
+
+class LocationForm(forms.ModelForm):
+    """Form for creating/editing locations"""
+    class Meta:
+        model = Location
+        fields = ['name', 'address', 'latitude', 'longitude', 'is_airport', 'is_active']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Location name'}),
+            'address': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Address'}),
+            'latitude': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Latitude (e.g., 8.4834)', 'step': '0.000001'}),
+            'longitude': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Longitude (e.g., 76.9198)', 'step': '0.000001'}),
+            'is_airport': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
