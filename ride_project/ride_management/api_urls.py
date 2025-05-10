@@ -1,4 +1,5 @@
 # ride_management/api_urls.py (for API endpoints)
+
 from django.urls import path
 from . import api_views
 
@@ -35,5 +36,7 @@ urlpatterns = [
     path('driver/update-location/', api_views.update_driver_location, name='update_driver_location'),
     path('driver/update-location/<int:trip_id>/', api_views.update_driver_location, name='update_driver_trip_location'),
     path('driver/location/<int:trip_id>/', api_views.driver_location, name='driver_location'),
-    path('admin/api/driver-locations/', api_views.admin_driver_locations, name='admin_driver_locations'),
+    
+    # Admin API - Fix: This is the endpoint that's missing
+    path('admin-driver-locations/', api_views.admin_driver_locations, name='admin_driver_locations'),
 ]

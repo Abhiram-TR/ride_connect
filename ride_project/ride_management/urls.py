@@ -1,8 +1,8 @@
-# ride_management/urls.py (simplified version without location management)
+# Update this section in your ride_management/urls.py file
+
 from django.urls import path
 from django.contrib.auth import views as auth_views
 from . import views
-from . import api_views
 
 urlpatterns = [
     # Auth URLs
@@ -26,21 +26,16 @@ urlpatterns = [
     path('trips/', views.trips_list, name='trips_list'),
     path('trips/<int:trip_id>/', views.trip_detail, name='trip_detail'),
     
-    
     # Users
     path('users/', views.users_list, name='users_list'),
     path('users/add/', views.add_user, name='add_user'),
     path('users/edit/<int:user_id>/', views.edit_user, name='edit_user'),
     
-    #Remove location URLs for now
+    # Locations
     path('locations/', views.locations_list, name='locations_list'),
     path('locations/add/', views.add_location, name='add_location'),
     path('locations/edit/<int:location_id>/', views.edit_location, name='edit_location'),
-
-     # Add the driver tracking URL here
-    path('driver-tracking/', views.driver_tracking, name='driver_tracking'),
     
-    # Add the API URL here
-    path('api/driver-locations/', api_views.admin_driver_locations, name='admin_driver_locations'),
+    # Add the driver tracking URL here
+    path('driver-tracking/', views.driver_tracking, name='driver_tracking'),
 ]
-
