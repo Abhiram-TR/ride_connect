@@ -37,6 +37,8 @@ urlpatterns = [
     path('driver/update-location/<int:trip_id>/', api_views.update_driver_location, name='update_driver_trip_location'),
     path('driver/location/<int:trip_id>/', api_views.driver_location, name='driver_location'),
     
-    # Admin API - Fix: This is the endpoint that's missing
+    # Admin API
     path('admin-driver-locations/', api_views.admin_driver_locations, name='admin_driver_locations'),
+    path('admin/allocate-pending-trips/', api_views.allocate_pending_trips, name='allocate_pending_trips'),
+    path('debug/allocation-system/', api_views.debug_allocation_system, name='debug_allocation_system'),
 ]

@@ -544,6 +544,69 @@ def allocate_pending_trips(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+def debug_allocation_system(request):
+    """Debug endpoint to check allocation system status"""
+    if request.user.user_type != 'admin':
+        return Response({'error': 'Not authorized'}, status=status.HTTP_403_FORBIDDEN)
+    
+    from .services import get_driver_availability_stats
+    
+    # Get stats
+    stats = get_driver_availability_stats()
+    
+    # Get pending trips info
+    pending_trips = Trip.objects.filter(
+        status='pending',
+        driver__isnull=True
+    ).select_related('pickup_location', 'dropoff_location')
+    
+    pending_info = []
+    for trip in pending_trips:
+        pickup_has_coords = bool(
+            trip.pickup_location and 
+            trip.pickup_location.latitude and 
+            trip.pickup_location.longitude
+        )
+        pending_info.append({
+            'id': trip.id,
+            'pickup_location': trip.pickup_location.name if trip.pickup_location else trip.pickup_location_text,
+            'pickup_has_coordinates': pickup_has_coords,
+            'created_ago_minutes': int((timezone.now() - trip.created_at).total_seconds() / 60)
+        })
+    
+    # Get driver location info
+    recent_threshold = timezone.now() - timezone.timedelta(minutes=5)
+    drivers_with_location = []
+    
+    for driver in Driver.objects.filter(status='active').select_related('user', 'location'):
+        location_info = {
+            'id': driver.id,
+            'name': f"{driver.user.first_name} {driver.user.last_name}",
+            'has_location': hasattr(driver, 'location') and driver.location is not None,
+            'location_recent': False
+        }
+        
+        if hasattr(driver, 'location') and driver.location:
+            location_info['location_recent'] = driver.location.last_updated >= recent_threshold
+            location_info['last_updated_minutes_ago'] = int(
+                (timezone.now() - driver.location.last_updated).total_seconds() / 60
+            )
+        
+        drivers_with_location.append(location_info)
+    
+    return Response({
+        'stats': stats,
+        'pending_trips': pending_info,
+        'drivers': drivers_with_location,
+        'issues': {
+            'pending_without_coordinates': len([t for t in pending_info if not t['pickup_has_coordinates']]),
+            'drivers_without_location': len([d for d in drivers_with_location if not d['has_location']]),
+            'drivers_with_old_location': len([d for d in drivers_with_location if d['has_location'] and not d['location_recent']])
+        }
+    })
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def driver_trip_history(request):
     """Get driver's trip history"""
     if request.user.user_type != 'driver':

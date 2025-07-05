@@ -1,6 +1,6 @@
 # ride_management/services.py
 
-from .models import Driver, Trip, DriverLocation
+from .models import Driver, Trip, DriverLocation, Vehicle
 from django.utils import timezone
 from django.db.models import Q
 import math
@@ -27,6 +27,21 @@ def haversine_distance(lat1, lon1, lat2, lon2):
     r = 6371
     return c * r
 
+def _get_driver_vehicle_info(driver):
+    """Get vehicle information for a driver"""
+    try:
+        vehicle = Vehicle.objects.filter(driver=driver).first()
+        if vehicle:
+            return {
+                'license_plate': vehicle.plate_number,
+                'vehicle_model': vehicle.model,
+                'vehicle_color': vehicle.color,
+                'vehicle_year': vehicle.year
+            }
+    except Exception as e:
+        logger.error(f"Error getting vehicle info for driver {driver.id}: {str(e)}")
+    return None
+
 def find_nearest_driver(trip, max_radius_km=10):
     """
     Find the nearest active driver for a trip within a specified radius
@@ -40,6 +55,9 @@ def find_nearest_driver(trip, max_radius_km=10):
     """
     try:
         # Get trip pickup coordinates
+        if not trip.pickup_location or not trip.pickup_location.latitude or not trip.pickup_location.longitude:
+            return None, "Trip pickup location coordinates not available"
+        
         pickup_latitude = float(trip.pickup_location.latitude)
         pickup_longitude = float(trip.pickup_location.longitude)
         
@@ -49,7 +67,7 @@ def find_nearest_driver(trip, max_radius_km=10):
         # Get all active drivers with recent location data
         active_drivers = Driver.objects.filter(
             status='active'
-        ).select_related('user').prefetch_related('driverlocation_set')
+        ).select_related('user', 'location')
         
         if not active_drivers.exists():
             return None, "No active drivers found"
@@ -72,13 +90,13 @@ def find_nearest_driver(trip, max_radius_km=10):
                 
                 # Get driver's most recent location within the time threshold
                 try:
-                    driver_location = DriverLocation.objects.filter(
-                        driver=driver,
-                        timestamp__gte=location_update_threshold
-                    ).latest('timestamp')
-                except DriverLocation.DoesNotExist:
-                    # Skip drivers without recent location data
-                    logger.debug(f"Driver {driver.id} has no recent location data")
+                    driver_location = driver.location
+                    if not driver_location or driver_location.last_updated < location_update_threshold:
+                        logger.debug(f"Driver {driver.id} has no recent location data")
+                        continue
+                except AttributeError:
+                    # Skip drivers without location data
+                    logger.debug(f"Driver {driver.id} has no location data")
                     continue
                 
                 driver_latitude = float(driver_location.latitude)
@@ -129,7 +147,7 @@ def get_driver_availability_stats():
         
         # Drivers with recent location updates
         drivers_with_recent_location = Driver.objects.filter(
-            driverlocation__timestamp__gte=location_update_threshold
+            location__last_updated__gte=location_update_threshold
         ).distinct().count()
         
         # Available drivers (active, no current trip, recent location)
@@ -138,7 +156,7 @@ def get_driver_availability_stats():
         ).exclude(
             trip__status__in=['accepted', 'in_progress', 'arrived']
         ).filter(
-            driverlocation__timestamp__gte=location_update_threshold
+            location__last_updated__gte=location_update_threshold
         ).distinct().count()
         
         return {
@@ -194,7 +212,6 @@ def allocate_trip_to_nearest_driver(trip_id, max_radius_km=10):
         # Assign the driver to the trip
         trip.driver = nearest_driver
         trip.status = 'accepted'
-        trip.assigned_at = timezone.now()
         trip.save()
         
         # Log the successful allocation
@@ -204,11 +221,7 @@ def allocate_trip_to_nearest_driver(trip_id, max_radius_km=10):
             'driver_id': nearest_driver.id,
             'driver_name': f"{nearest_driver.user.first_name} {nearest_driver.user.last_name}",
             'driver_phone': nearest_driver.user.phone if hasattr(nearest_driver.user, 'phone') else None,
-            'vehicle_info': {
-                'license_plate': nearest_driver.license_plate,
-                'vehicle_model': nearest_driver.vehicle_model,
-                'vehicle_color': nearest_driver.vehicle_color
-            } if hasattr(nearest_driver, 'license_plate') else None,
+            'vehicle_info': _get_driver_vehicle_info(nearest_driver),
             'distance_km': distance,
             'estimated_arrival_minutes': max(int(distance * 2), 5)  # Rough estimate: 2 min per km, min 5 min
         }
@@ -275,7 +288,7 @@ def cancel_trip_allocation(trip_id, reason=""):
     
     Args:
         trip_id: ID of the trip to cancel
-        reason: Reason for cancellation
+        reason: Reason for cancellation (currently unused, kept for future)
     
     Returns:
         tuple: (success: bool, message: str)
@@ -290,8 +303,6 @@ def cancel_trip_allocation(trip_id, reason=""):
         driver = trip.driver
         trip.driver = None
         trip.status = 'cancelled'
-        trip.cancelled_at = timezone.now()
-        trip.cancellation_reason = reason
         trip.save()
         
         logger.info(f"Trip {trip_id} cancelled, driver {driver.id if driver else 'None'} freed up")
