@@ -134,4 +134,4 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 
-GOOGLE_MAPS_API_KEY = 'AIzaSyBzcYTdIi4d1Uj9jMx1zRunJoLN_hHEI_Q' 
+GOOGLE_MAPS_API_KEY = 'AIzaSyCSYuaCWPhjBKCP9N9_rQtf_rizIJZjUdY' 

@@ -40,5 +40,6 @@ urlpatterns = [
     # Admin API
     path('admin-driver-locations/', api_views.admin_driver_locations, name='admin_driver_locations'),
     path('admin/allocate-pending-trips/', api_views.allocate_pending_trips, name='allocate_pending_trips'),
+    path('admin/trigger-automatic-allocation/', api_views.trigger_automatic_allocation, name='trigger_automatic_allocation'),
     path('debug/allocation-system/', api_views.debug_allocation_system, name='debug_allocation_system'),
 ]

@@ -5,6 +5,8 @@ from django.utils import timezone
 from django.db.models import Q
 import math
 import logging
+import requests
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +28,67 @@ def haversine_distance(lat1, lon1, lat2, lon2):
     # Radius of earth in kilometers
     r = 6371
     return c * r
+
+def get_road_distance_google_maps(origin_lat, origin_lng, dest_lat, dest_lng):
+    """
+    Get road distance and duration using Google Maps Distance Matrix API
+    
+    Args:
+        origin_lat, origin_lng: Origin coordinates
+        dest_lat, dest_lng: Destination coordinates
+    
+    Returns:
+        tuple: (distance_km, duration_minutes) or (None, None) if failed
+    """
+    try:
+        api_key = getattr(settings, 'GOOGLE_MAPS_API_KEY', None)
+        if not api_key:
+            logger.warning("Google Maps API key not configured, falling back to haversine distance")
+            return None, None
+        
+        # Google Maps Distance Matrix API endpoint
+        url = "https://maps.googleapis.com/maps/api/distancematrix/json"
+        
+        params = {
+            'origins': f"{origin_lat},{origin_lng}",
+            'destinations': f"{dest_lat},{dest_lng}",
+            'mode': 'driving',
+            'units': 'metric',
+            'key': api_key
+        }
+        
+        response = requests.get(url, params=params, timeout=10)
+        response.raise_for_status()
+        
+        data = response.json()
+        
+        if data['status'] == 'OK' and data['rows']:
+            element = data['rows'][0]['elements'][0]
+            
+            if element['status'] == 'OK':
+                # Extract distance in kilometers
+                distance_meters = element['distance']['value']
+                distance_km = distance_meters / 1000
+                
+                # Extract duration in minutes
+                duration_seconds = element['duration']['value']
+                duration_minutes = duration_seconds / 60
+                
+                logger.info(f"Google Maps API: {distance_km:.2f}km, {duration_minutes:.1f}min")
+                return distance_km, duration_minutes
+            else:
+                logger.warning(f"Google Maps API element status: {element['status']}")
+                return None, None
+        else:
+            logger.warning(f"Google Maps API status: {data['status']}")
+            return None, None
+            
+    except requests.RequestException as e:
+        logger.error(f"Google Maps API request failed: {str(e)}")
+        return None, None
+    except Exception as e:
+        logger.error(f"Error getting road distance: {str(e)}")
+        return None, None
 
 def _get_driver_vehicle_info(driver):
     """Get vehicle information for a driver"""
@@ -102,11 +165,25 @@ def find_nearest_driver(trip, max_radius_km=10):
                 driver_latitude = float(driver_location.latitude)
                 driver_longitude = float(driver_location.longitude)
                 
-                # Calculate distance using Haversine formula
-                distance = haversine_distance(
-                    pickup_latitude, pickup_longitude,
-                    driver_latitude, driver_longitude
+                # Calculate distance using Google Maps API first, fallback to Haversine
+                road_distance, road_duration = get_road_distance_google_maps(
+                    driver_latitude, driver_longitude,
+                    pickup_latitude, pickup_longitude
                 )
+                
+                if road_distance is not None:
+                    distance = road_distance
+                    # Store duration for later use
+                    if hasattr(driver, 'estimated_duration'):
+                        driver.estimated_duration = road_duration
+                    logger.debug(f"Driver {driver.id}: road distance {distance:.2f}km, duration {road_duration:.1f}min")
+                else:
+                    # Fallback to Haversine distance
+                    distance = haversine_distance(
+                        pickup_latitude, pickup_longitude,
+                        driver_latitude, driver_longitude
+                    )
+                    logger.debug(f"Driver {driver.id}: haversine distance {distance:.2f}km (Google Maps API failed)")
                 
                 candidates_found += 1
                 

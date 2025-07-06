@@ -318,7 +318,7 @@ def driver_tracking(request):
         ).first()
     
     # Get Google Maps API key from settings
-    google_maps_api_key = getattr(settings, 'GOOGLE_MAPS_API_KEY', 'AIzaSyBzcYTdIi4d1Uj9jMx1zRunJoLN_hHEI_Q')
+    google_maps_api_key = getattr(settings, 'GOOGLE_MAPS_API_KEY', 'AIzaSyCSYuaCWPhjBKCP9N9_rQtf_rizIJZjUdY')
     
     return render(request, 'admin/driver_tracking.html', {
         'drivers': drivers,

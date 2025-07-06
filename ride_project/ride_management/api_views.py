@@ -122,12 +122,15 @@ def book_ride(request):
             status='pending'
         )
         
-        # Try to allocate a driver immediately
+        # Try to allocate a driver immediately (mandatory for automatic system)
         allocation_success = False
         allocation_result = None
         
         try:
             allocation_success, allocation_result = allocate_trip_to_nearest_driver(trip.id)
+            if not allocation_success:
+                # Log the failure but continue - the background service will retry
+                print(f"Initial driver allocation failed: {allocation_result}")
         except Exception as e:
             # If allocation fails, the trip is still created
             print(f"Error in driver allocation: {str(e)}")
@@ -218,14 +221,19 @@ def driver_stats(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def pending_ride_requests(request):
-    """Get pending ride requests for driver"""
+    """Get pending ride requests for driver - DEPRECATED: System now uses automatic allocation"""
     if request.user.user_type != 'driver':
         return Response({'error': 'Not a driver'}, status=status.HTTP_403_FORBIDDEN)
     
-    # In production, this would include location-based matching
+    # Return empty list since we're using automatic allocation
+    # Only show trips that have been pending for more than 5 minutes (allocation system failed)
+    from django.utils import timezone
+    cutoff_time = timezone.now() - timezone.timedelta(minutes=5)
+    
     requests = Trip.objects.filter(
         status='pending',
-        driver=None
+        driver=None,
+        created_at__lt=cutoff_time  # Only show old pending trips
     ).select_related('user', 'pickup_location', 'dropoff_location')[:5]
     
     request_data = []
@@ -238,7 +246,8 @@ def pending_ride_requests(request):
             'pickup_location': pickup_name,
             'dropoff_location': dropoff_name,
             'fare': str(trip.fare),
-            'user': trip.user.first_name if trip.user else 'Unknown'
+            'user': trip.user.first_name if trip.user else 'Unknown',
+            'note': 'Automatic allocation failed - manual intervention required'
         })
     
     return Response({'requests': request_data})
@@ -847,3 +856,24 @@ def admin_driver_locations(request):
         })
     
     return Response({'drivers': result})
+
+# Add a new API endpoint for manual allocation trigger
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def trigger_automatic_allocation(request):
+    """Trigger automatic allocation for all pending trips (admin only)"""
+    if request.user.user_type != 'admin':
+        return Response({'error': 'Not authorized'}, status=status.HTTP_403_FORBIDDEN)
+    
+    from .services import bulk_allocate_pending_trips
+    
+    max_radius = request.data.get('max_radius_km', 10)
+    max_trips = request.data.get('max_trips', 20)
+    
+    results = bulk_allocate_pending_trips(max_radius, max_trips)
+    
+    return Response({
+        'success': True,
+        'results': results,
+        'message': f"Processed {results['total_processed']} trips, {results['successful_allocations']} successful"
+    })
