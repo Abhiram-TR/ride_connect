@@ -81,6 +81,13 @@ def get_road_distance_google_maps(origin_lat, origin_lng, dest_lat, dest_lng):
                 return None, None
         else:
             logger.warning(f"Google Maps API status: {data['status']}")
+            # Provide specific error messages for common issues
+            if data['status'] == 'REQUEST_DENIED':
+                logger.error("Google Maps API Request Denied - Check API key permissions and billing")
+            elif data['status'] == 'OVER_QUERY_LIMIT':
+                logger.error("Google Maps API Over Query Limit - Check quotas and billing")
+            elif data['status'] == 'INVALID_REQUEST':
+                logger.error("Google Maps API Invalid Request - Check coordinates format")
             return None, None
             
     except requests.RequestException as e:
@@ -105,13 +112,14 @@ def _get_driver_vehicle_info(driver):
         logger.error(f"Error getting vehicle info for driver {driver.id}: {str(e)}")
     return None
 
-def find_nearest_driver(trip, max_radius_km=10):
+def find_nearest_driver(trip, max_radius_km=10, debug=False):
     """
     Find the nearest active driver for a trip within a specified radius
     
     Args:
         trip: Trip object
         max_radius_km: Maximum search radius in kilometers (default: 10km)
+        debug: Enable debug output (default: False)
     
     Returns:
         tuple: (Driver object or None, distance or error message)
@@ -139,6 +147,7 @@ def find_nearest_driver(trip, max_radius_km=10):
         nearest_driver = None
         min_distance = float('inf')
         candidates_found = 0
+        debug_info = []
         
         for driver in active_drivers:
             try:
@@ -178,14 +187,26 @@ def find_nearest_driver(trip, max_radius_km=10):
                         driver.estimated_duration = road_duration
                     logger.debug(f"Driver {driver.id}: road distance {distance:.2f}km, duration {road_duration:.1f}min")
                 else:
-                    # Fallback to Haversine distance
-                    distance = haversine_distance(
+                    # Fallback to Haversine distance with road distance approximation
+                    # Apply a road distance multiplier to account for actual road routes
+                    # Typical road distance is 1.2-1.5x straight-line distance in urban areas
+                    straight_distance = haversine_distance(
                         pickup_latitude, pickup_longitude,
                         driver_latitude, driver_longitude
                     )
-                    logger.debug(f"Driver {driver.id}: haversine distance {distance:.2f}km (Google Maps API failed)")
+                    distance = straight_distance * 1.3  # 30% multiplier for road distance approximation
+                    logger.debug(f"Driver {driver.id}: haversine distance {straight_distance:.2f}km, estimated road distance {distance:.2f}km (Google Maps API failed)")
                 
                 candidates_found += 1
+                
+                # Store debug info
+                if debug:
+                    debug_info.append({
+                        'driver_id': driver.id,
+                        'driver_name': f"{driver.user.first_name} {driver.user.last_name}",
+                        'distance': distance,
+                        'within_radius': distance <= max_radius_km
+                    })
                 
                 # Check if driver is within acceptable radius
                 if distance <= max_radius_km and distance < min_distance:
@@ -195,6 +216,9 @@ def find_nearest_driver(trip, max_radius_km=10):
             except (ValueError, TypeError) as e:
                 logger.error(f"Error processing driver {driver.id}: {str(e)}")
                 continue
+        
+        if debug:
+            logger.info(f"Debug info: {debug_info}")
         
         if nearest_driver:
             logger.info(f"Found nearest driver {nearest_driver.id} at distance {min_distance:.2f}km")
