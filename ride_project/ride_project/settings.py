@@ -134,4 +134,7 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 
-GOOGLE_MAPS_API_KEY = 'AIzaSyCSYuaCWPhjBKCP9N9_rQtf_rizIJZjUdY' 
+GOOGLE_MAPS_API_KEY = 'AIzaSyCSYuaCWPhjBKCP9N9_rQtf_rizIJZjUdY'
+
+# Driver allocation settings
+DRIVER_LOCATION_FRESHNESS_MINUTES = 60  # Allow 60-minute old location data for allocation 

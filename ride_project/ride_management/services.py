@@ -112,7 +112,7 @@ def _get_driver_vehicle_info(driver):
         logger.error(f"Error getting vehicle info for driver {driver.id}: {str(e)}")
     return None
 
-def find_nearest_driver(trip, max_radius_km=10, debug=False):
+def find_nearest_driver(trip, max_radius_km=10, debug=False, location_freshness_minutes=None):
     """
     Find the nearest active driver for a trip within a specified radius
     
@@ -120,6 +120,7 @@ def find_nearest_driver(trip, max_radius_km=10, debug=False):
         trip: Trip object
         max_radius_km: Maximum search radius in kilometers (default: 10km)
         debug: Enable debug output (default: False)
+        location_freshness_minutes: How recent location data should be in minutes (default: from settings)
     
     Returns:
         tuple: (Driver object or None, distance or error message)
@@ -133,7 +134,9 @@ def find_nearest_driver(trip, max_radius_km=10, debug=False):
         pickup_longitude = float(trip.pickup_location.longitude)
         
         # Define time threshold for recent location updates
-        location_update_threshold = timezone.now() - timezone.timedelta(minutes=5)
+        if location_freshness_minutes is None:
+            location_freshness_minutes = getattr(settings, 'DRIVER_LOCATION_FRESHNESS_MINUTES', 5)
+        location_update_threshold = timezone.now() - timezone.timedelta(minutes=location_freshness_minutes)
         
         # Get all active drivers with recent location data
         active_drivers = Driver.objects.filter(
@@ -271,7 +274,7 @@ def get_driver_availability_stats():
         logger.error(f"Error getting driver stats: {str(e)}")
         return {}
 
-def allocate_trip_to_nearest_driver(trip_id, max_radius_km=10):
+def allocate_trip_to_nearest_driver(trip_id, max_radius_km=10, location_freshness_minutes=None):
     """
     Allocate a trip to the nearest available driver within specified radius
     
@@ -291,7 +294,7 @@ def allocate_trip_to_nearest_driver(trip_id, max_radius_km=10):
         )
         
         # Find the nearest driver
-        result = find_nearest_driver(trip, max_radius_km)
+        result = find_nearest_driver(trip, max_radius_km, location_freshness_minutes=location_freshness_minutes)
         
         if not result or not result[0]:
             error_msg = result[1] if result else "Error finding nearest driver"
