@@ -25,6 +25,7 @@ urlpatterns = [
     # Trips
     path('trips/', views.trips_list, name='trips_list'),
     path('trips/<int:trip_id>/', views.trip_detail, name='trip_detail'),
+    path('trips/<int:trip_id>/update_status/', views.update_trip_status, name='update_trip_status'),
     
     # Users
     path('users/', views.users_list, name='users_list'),
